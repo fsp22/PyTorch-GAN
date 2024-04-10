@@ -7,7 +7,7 @@ if [[ $FILE != "ae_photos" && $FILE != "apple2orange" && $FILE != "summer2winter
     exit 1
 fi
 
-URL=https://people.eecs.berkeley.edu/~taesung_park/CycleGAN/datasets/$FILE.zip
+URL=https://efrosgans.eecs.berkeley.edu/cyclegan/datasets//$FILE.zip
 ZIP_FILE=./$FILE.zip
 TARGET_DIR=./$FILE
 wget -N $URL -O $ZIP_FILE
