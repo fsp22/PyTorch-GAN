@@ -147,7 +147,7 @@ for epoch in range(opt.n_epochs):
 
         # Predict validity
         real_pred = discriminator(real_imgs)
-        fake_pred = discriminator(gen_imgs.detach())
+        fake_pred = discriminator(gen_imgs).detach()
 
         if opt.rel_avg_gan:
             real_loss = adversarial_loss(real_pred - fake_pred.mean(0, keepdim=True), valid)
