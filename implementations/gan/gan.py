@@ -14,6 +14,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils import utils
+
 os.makedirs("images", exist_ok=True)
 
 parser = argparse.ArgumentParser()
@@ -26,13 +30,16 @@ parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads 
 parser.add_argument("--latent_dim", type=int, default=100, help="dimensionality of the latent space")
 parser.add_argument("--img_size", type=int, default=28, help="size of each image dimension")
 parser.add_argument("--channels", type=int, default=1, help="number of image channels")
-parser.add_argument("--sample_interval", type=int, default=400, help="interval betwen image samples")
+parser.add_argument("--eval_interval", type=int, default=5, help="evaluate every x epoch")
 opt = parser.parse_args()
 print(opt)
 
 img_shape = (opt.channels, opt.img_size, opt.img_size)
 
 cuda = True if torch.cuda.is_available() else False
+
+import os
+
 
 
 class Generator(nn.Module):
@@ -54,6 +61,11 @@ class Generator(nn.Module):
             nn.Linear(1024, int(np.prod(img_shape))),
             nn.Tanh()
         )
+
+        self.best_is = 0
+        self.best_fid = float('inf')
+        self.best_kid = float('inf')
+
 
     def forward(self, z):
         img = self.model(z)
@@ -165,6 +177,11 @@ for epoch in range(opt.n_epochs):
             % (epoch, opt.n_epochs, i, len(dataloader), d_loss.item(), g_loss.item())
         )
 
-        batches_done = epoch * len(dataloader) + i
-        if batches_done % opt.sample_interval == 0:
-            save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
+    save_image(gen_imgs.data[:25], "images/epoch_%d.png" % epoch, nrow=5, normalize=True)
+
+
+    if epoch % opt.eval_interval == 0:
+            is_score, fid_score, kid_score = utils.evaluate_model(generator, dataloader, opt.latent_dim)
+            print(f"Epoch {epoch}: IS = {is_score:.2f}, FID = {fid_score:.2f}, KID = {kid_score:.4f}")
+            utils.save_best_model(generator, is_score, fid_score, kid_score, epoch)
+                
