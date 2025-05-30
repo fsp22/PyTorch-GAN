@@ -133,31 +133,11 @@ for epoch in range(opt.n_epochs):
         # Configure input
         real_imgs = Variable(imgs.type(Tensor))
 
-        # -----------------
-        #  Train Generator
-        # -----------------
-
-        optimizer_G.zero_grad()
-
         # Sample noise as generator input
         z = Variable(Tensor(np.random.normal(0, 1, (imgs.shape[0], opt.latent_dim))))
 
         # Generate a batch of images
         gen_imgs = generator(z)
-
-        real_pred = discriminator(real_imgs).detach()
-        fake_pred = discriminator(gen_imgs)
-
-        if opt.rel_avg_gan:
-            g_loss = adversarial_loss(fake_pred - real_pred.mean(0, keepdim=True), valid)
-        else:
-            g_loss = adversarial_loss(fake_pred - real_pred, valid)
-
-        # Loss measures generator's ability to fool the discriminator
-        g_loss = adversarial_loss(discriminator(gen_imgs), valid)
-
-        g_loss.backward()
-        optimizer_G.step()
 
         # ---------------------
         #  Train Discriminator
@@ -167,19 +147,37 @@ for epoch in range(opt.n_epochs):
 
         # Predict validity
         real_pred = discriminator(real_imgs)
-        fake_pred = discriminator(gen_imgs.detach())
+        fake_pred = discriminator(gen_imgs).detach()
 
         if opt.rel_avg_gan:
             real_loss = adversarial_loss(real_pred - fake_pred.mean(0, keepdim=True), valid)
             fake_loss = adversarial_loss(fake_pred - real_pred.mean(0, keepdim=True), fake)
+            d_loss = (real_loss + fake_loss) / 2
         else:
-            real_loss = adversarial_loss(real_pred - fake_pred, valid)
-            fake_loss = adversarial_loss(fake_pred - real_pred, fake)
-
-        d_loss = (real_loss + fake_loss) / 2
+            d_loss = adversarial_loss(real_pred - fake_pred, valid)
 
         d_loss.backward()
         optimizer_D.step()
+        
+        # -----------------
+        #  Train Generator
+        # -----------------
+
+        optimizer_G.zero_grad()
+
+        real_pred = discriminator(real_imgs).detach()
+        fake_pred = discriminator(gen_imgs)
+
+        # Loss measures generator's ability to fool the discriminator
+        if opt.rel_avg_gan:
+            real_loss = adversarial_loss(real_pred - fake_pred.mean(0, keepdim=True), fake)
+            fake_loss = adversarial_loss(fake_pred - real_pred.mean(0, keepdim=True), valid)
+            g_loss = (real_loss + fake_loss) / 2
+        else:
+            g_loss = adversarial_loss(fake_pred - real_pred, valid)
+
+        g_loss.backward()
+        optimizer_G.step()
 
         print(
             "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
