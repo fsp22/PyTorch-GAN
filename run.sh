@@ -1,11 +1,20 @@
 #!/bin/bash
 set -e
 
+# activate virtual env
+if [[ -e ~/env.sh ]]; then
+    echo "Activate Virtual Env"
+    source ~/env.sh
+fi
+
+export CUDA_VISIBLE_DEVICES=0
+
 # Get current date and time for the folder name
 datetime=$(date +"%Y%m%d_%H%M%S")
 folder_name="run_$datetime"
 
 # Run the Python script with the specified parameters
+export PYTHONPATH=$(realpath .)
 cd implementations/gan
 python gan.py \
     --n_epochs 200 \
