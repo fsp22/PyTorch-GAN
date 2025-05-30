@@ -1,12 +1,23 @@
+# datasets
 
-*.json
-*.h5
-*.hdf5
-.DS_Store
+data/celeba/
+data/mnist/
 
-data/*/
-implementations/*/data
-implementations/*/images
-implementations/*/saved_models
+# output folders
 
-__pycache__
+implementations/*/temp/
+implementations/*/results*/
+implementations/*/images/
+
+
+#pycache
+implementations/*/__pycache__/	
+implementations/gan/__pycache__/	
+implementations/wgan/__pycache__/	
+implementations/wgan_div/__pycache__/	
+implementations/wgan_gp/__pycache__/	
+implementations/__pycache__/
+
+# checkpoints
+
+

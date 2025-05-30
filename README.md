@@ -7,6 +7,24 @@ Collection of PyTorch implementations of Generative Adversarial Network varietie
 
 <b>See also:</b> [Keras-GAN](https://github.com/eriklindernoren/Keras-GAN)
 
+## Quick Commands for any type of GAN
+
+```
+cd implementations
+export PYTHONPATH=/home/yca/PyTorch-GAN/implementations:$PYTHONPATH
+```
+Train
+
+```
+cd gan_type
+python gan_type.py --dataset="celeba" --img_size=128 --channels=3  #if mnist, just use the default parameters and run python gan_type.py 
+```
+Inference
+```
+ python inference.py --img_size=128 --channels=3 --model=wgan --model_checkpoint="wgan/generator_best_fid.pth"
+```
+The generated images will be saved under gan_type/inference folder
+
 ## Table of Contents
   * [Installation](#installation)
   * [Implementations](#implementations)
