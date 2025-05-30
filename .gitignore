@@ -4,11 +4,11 @@ data/celeba/
 data/mnist/
 
 # output folders
-
 implementations/*/temp/
 implementations/*/results*/
 implementations/*/images/
-
+# Ignore all run_* directories at any level
+**/run_*/
 
 #pycache
 implementations/*/__pycache__/

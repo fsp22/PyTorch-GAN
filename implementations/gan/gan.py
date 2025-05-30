@@ -9,8 +9,6 @@ import logging
 from torchvision.utils import save_image
 
 
-from torch.autograd import Variable
-
 import torch.nn as nn
 import torch
 
@@ -139,7 +137,8 @@ if __name__ == "__main__":
             optimizer_G.zero_grad()
 
             # Sample noise as generator input
-            z = Tensor(np.random.normal(0, 1, (imgs.shape[0], opt.latent_dim))).to(device)
+            # z = Tensor(np.random.normal(0, 1, (imgs.shape[0], opt.latent_dim))).to(device)
+            z = torch.randn(imgs.shape[0], opt.latent_dim).to(device)
 
             # Generate a batch of images
             gen_imgs = generator(z)
@@ -181,7 +180,7 @@ if __name__ == "__main__":
             % (epoch, opt.n_epochs, dlosses[-1], glosses[-1])
         )
 
-        if epoch % opt.eval_interval == 0:
+        if (epoch+1) % opt.eval_interval == 0:
             logging.info("Evaluating model...")
             is_score, fid_score, kid_score = evaluate_model(generator, dataloader, opt.latent_dim)
             logging.info(f"Epoch {epoch}: IS = {is_score:.2f}, FID = {fid_score:.2f}, KID = {kid_score:.4f}")
