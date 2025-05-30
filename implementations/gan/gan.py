@@ -89,6 +89,7 @@ if __name__ == "__main__":
     img_shape = (opt.channels, opt.img_size, opt.img_size)
 
     cuda = True if torch.cuda.is_available() else False
+    device = torch.device("cuda" if cuda else "cpu")
 
     # Loss function
     adversarial_loss = torch.nn.BCELoss()
@@ -125,11 +126,11 @@ if __name__ == "__main__":
         for i, (imgs, _) in enumerate(dataloader):
 
             # Adversarial ground truths
-            valid = torch.ones((imgs.size(0), 1))
-            fake = torch.zeros((imgs.size(0), 1))
+            valid = torch.ones((imgs.size(0), 1)).to(device)
+            fake = torch.zeros((imgs.size(0), 1)).to(device)
 
             # Configure input
-            real_imgs = imgs.type(Tensor)
+            real_imgs = imgs.type(Tensor).to(device)
 
             # -----------------
             #  Train Generator
@@ -138,7 +139,7 @@ if __name__ == "__main__":
             optimizer_G.zero_grad()
 
             # Sample noise as generator input
-            z = Variable(Tensor(np.random.normal(0, 1, (imgs.shape[0], opt.latent_dim))))
+            z = Tensor(np.random.normal(0, 1, (imgs.shape[0], opt.latent_dim))).to(device)
 
             # Generate a batch of images
             gen_imgs = generator(z)
