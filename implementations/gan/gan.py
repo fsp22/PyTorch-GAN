@@ -1,7 +1,10 @@
 import argparse
 import os
 import numpy as np
-import math
+from tqdm import tqdm
+
+from implementations.utils.utils import show_train_hist, evaluate_model, save_best_model, getDataloader
+import logging
 
 from torchvision.utils import save_image
 
@@ -9,13 +12,8 @@ from torchvision.utils import save_image
 from torch.autograd import Variable
 
 import torch.nn as nn
-import torch.nn.functional as F
 import torch
 
-from utils import evaluate_model, save_best_model
-from datasets import getDataloader
-
-import os
 
 class Generator(nn.Module):
     def __init__(self, latent_dim, img_shape):
@@ -68,7 +66,8 @@ class Discriminator(nn.Module):
         validity = self.model(img_flat)
 
         return validity
-    
+
+
 if __name__ == "__main__":
     os.makedirs("images", exist_ok=True)
 
@@ -80,12 +79,12 @@ if __name__ == "__main__":
     parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
     parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
     parser.add_argument("--latent_dim", type=int, default=100, help="dimensionality of the latent space")
-    parser.add_argument("--img_size", type=int, default=28, help="size of each image dimension")
+    parser.add_argument("--img_size", type=int, default=32, help="size of each image dimension")
     parser.add_argument("--channels", type=int, default=1, help="number of image channels")
     parser.add_argument("--eval_interval", type=int, default=5, help="evaluate every x epoch")
     parser.add_argument("--dataset", type=str, default="mnist", help="dataset type: mnist or celeba for now")
     opt = parser.parse_args()
-    print(opt)
+    logging.info(opt)
 
     img_shape = (opt.channels, opt.img_size, opt.img_size)
 
@@ -116,16 +115,21 @@ if __name__ == "__main__":
     # ----------
     #  Training
     # ----------
+    glosses = []
+    dlosses = []
 
     for epoch in range(opt.n_epochs):
+        glosses.append(0)
+        dlosses.append(0)
+
         for i, (imgs, _) in enumerate(dataloader):
 
             # Adversarial ground truths
-            valid = Variable(Tensor(imgs.size(0), 1).fill_(1.0), requires_grad=False)
-            fake = Variable(Tensor(imgs.size(0), 1).fill_(0.0), requires_grad=False)
+            valid = torch.ones((imgs.size(0), 1))
+            fake = torch.zeros((imgs.size(0), 1))
 
             # Configure input
-            real_imgs = Variable(imgs.type(Tensor))
+            real_imgs = imgs.type(Tensor)
 
             # -----------------
             #  Train Generator
@@ -159,16 +163,27 @@ if __name__ == "__main__":
             d_loss.backward()
             optimizer_D.step()
 
-            print(
+            logging.info(
                 "[Epoch %d/%d] [Batch %d/%d] [D loss: %f] [G loss: %f]"
                 % (epoch, opt.n_epochs, i, len(dataloader), d_loss.item(), g_loss.item())
             )
 
-        save_image(gen_imgs.data[:25], "images/epoch_%d.png" % epoch, nrow=5, normalize=True)
+            glosses[-1] += g_loss.item()
+            dlosses[-1] += d_loss.item()
 
+        save_image(gen_imgs.data[:25], "images/epoch_%d.png" % epoch, nrow=5, normalize=True)
+        glosses[-1] /= len(dataloader)
+        dlosses[-1] /= len(dataloader)
+
+        logging.info(
+            "[END Epoch %d/%d] [D loss: %f] [G loss: %f]"
+            % (epoch, opt.n_epochs, dlosses[-1], glosses[-1])
+        )
 
         if epoch % opt.eval_interval == 0:
-                is_score, fid_score, kid_score = evaluate_model(generator, dataloader, opt.latent_dim)
-                print(f"Epoch {epoch}: IS = {is_score:.2f}, FID = {fid_score:.2f}, KID = {kid_score:.4f}")
-                save_best_model(generator, is_score, fid_score, kid_score, epoch)
-                    
+            logging.info("Evaluating model...")
+            is_score, fid_score, kid_score = evaluate_model(generator, dataloader, opt.latent_dim)
+            logging.info(f"Epoch {epoch}: IS = {is_score:.2f}, FID = {fid_score:.2f}, KID = {kid_score:.4f}")
+            save_best_model(generator, is_score, fid_score, kid_score, epoch)
+
+    show_train_hist(dlosses, glosses, 'images/train_losses.png')
